@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>关系进展看板 · 莫佳雯</title>
+<style>
+  :root{
+    --bg:#f6f3ee; --paper:#ffffff; --ink:#211e1b; --ink2:#574f49; --muted:#9a9088;
+    --line:#e9e2d8; --line2:#f2ece3; --accent:#bd5a3e; --accent-soft:#f6e6df;
+    --amber:#c08a35; --green:#4e7a5c; --yellow:#bfa02c; --red:#ac4a40; --slate:#4a6478;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC",sans-serif;
+    font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased;padding:40px 24px 80px;
+  }
+  .wrap{max-width:1060px;margin:0 auto;}
+
+  header{margin-bottom:14px;}
+  .kicker{font-size:12px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
+  h1{font-size:34px;line-height:1.25;font-weight:650;letter-spacing:-.01em;margin-bottom:12px;}
+  h1 span{color:var(--accent);}
+  .sub{color:var(--ink2);font-size:14.5px;}
+  .sub b{font-weight:600;color:var(--ink);}
+  .rule{height:1px;background:linear-gradient(90deg,var(--line) 0%,var(--line) 60%,transparent 100%);margin:22px 0 0;}
+
+  .quicknav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0;font-size:12.5px;}
+  .quicknav a{color:var(--accent);text-decoration:none;border:1px solid #ecd6c9;background:#fffaf6;border-radius:20px;padding:4px 12px;}
+  .quicknav a:hover{background:var(--accent-soft);}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 26px;}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px 16px;position:relative;overflow:hidden;}
+  .kpi::after{content:"";position:absolute;left:0;top:0;width:3px;height:100%;background:var(--line);}
+  .kpi.hot::after{background:var(--accent);}
+  .kpi .k-label{font-size:12.5px;color:var(--muted);letter-spacing:.06em;}
+  .kpi .k-val{font-size:31px;font-weight:650;letter-spacing:-.02em;line-height:1.15;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .kpi .k-val small{font-size:14px;font-weight:500;color:var(--muted);margin-left:3px;}
+  .kpi .k-note{font-size:12.5px;color:var(--ink2);margin-top:4px;}
+
+  .verdict{background:linear-gradient(180deg,#fff8f4,#ffffff 85%);border:1px solid #ecd6c9;border-left:4px solid var(--accent);border-radius:16px;padding:28px 26px 24px;margin-bottom:20px;}
+  .verdict .v-lab{font-size:11.5px;letter-spacing:.18em;color:var(--accent);font-weight:650;margin-bottom:10px;}
+  .verdict .v-main{font-size:24px;line-height:1.52;font-weight:650;letter-spacing:-.01em;}
+  .verdict .v-main em{font-style:normal;color:var(--accent);}
+  .verdict .v-sub{margin-top:12px;font-size:14px;color:var(--ink2);}
+  .verdict .v-sub b{color:var(--ink);}
+  .verdict .v-after{margin-top:14px;padding-top:12px;border-top:1px dashed #ecd6c9;font-size:13.5px;color:var(--ink2);line-height:1.72;}
+  .verdict .v-after b{color:var(--accent);font-weight:650;}
+
+  .layers{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:34px;}
+  .layer{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 15px 15px;}
+  .layer .l-name{font-size:12px;color:var(--muted);letter-spacing:.05em;}
+  .layer .l-pct{font-size:23px;font-weight:650;margin:3px 0 8px;font-variant-numeric:tabular-nums;}
+  .layer .bar{height:5px;border-radius:3px;background:var(--line2);overflow:hidden;}
+  .layer .bar i{display:block;height:100%;border-radius:3px;background:var(--accent);}
+  .layer.l2 .bar i{background:var(--amber);}
+  .layer.l3 .bar i{background:var(--yellow);}
+  .layer.l4 .bar i{background:#b9b0a6;}
+  .layer .l-note{font-size:12px;color:var(--ink2);margin-top:9px;line-height:1.55;}
+
+  section{margin-bottom:36px;}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;}
+  .sec-head h2{font-size:17px;font-weight:650;}
+  .sec-head .tag{font-size:11.5px;color:var(--muted);letter-spacing:.12em;}
+  .sec-head .ln{flex:1;height:1px;background:var(--line);}
+
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:24px 22px 18px;}
+  .legend{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:6px;font-size:13px;color:var(--ink2);}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:7px;}
+  .l-temp{background:var(--accent);}
+  .l-base{background:var(--green);}
+  svg{display:block;width:100%;height:auto;}
+  .grid{stroke:var(--line2);stroke-width:1;}
+  .axis{fill:var(--muted);font-size:11.5px;}
+  .axis-x{fill:var(--muted);font-size:9.5px;}
+  .axis-x.on{fill:var(--accent);font-weight:600;}
+  .val{fill:var(--ink2);font-size:11px;font-variant-numeric:tabular-nums;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;}
+  .val.on{fill:var(--accent);font-weight:650;}
+  .peak-ring{fill:none;stroke:var(--accent);stroke-width:1.5;opacity:.35;}
+  .chart-note{font-size:12.8px;color:var(--ink2);margin-top:8px;padding-top:14px;border-top:1px dashed var(--line);line-height:1.75;}
+  .chart-note b{color:var(--accent);font-weight:600;}
+  .chart-note b.gn{color:var(--green);background:none;}
+  .chart-note p+p{margin-top:7px;}
+
+  .alert{background:#fffdf8;border:1px solid #ecdfc8;border-radius:14px;padding:20px 22px;margin-bottom:24px;}
+  .alert h3{font-size:14px;font-weight:650;color:#8a6a2a;margin-bottom:10px;letter-spacing:.04em;}
+  .alert p{font-size:13.8px;color:var(--ink2);line-height:1.78;}
+  .alert p+p{margin-top:8px;}
+  .alert b{color:var(--ink);font-weight:650;}
+
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .signal{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+  .signal h3{font-size:13px;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .g{background:var(--green);} .y{background:var(--yellow);} .r{background:var(--red);}
+  .signal ul{list-style:none;}
+  .signal li{font-size:13.3px;color:var(--ink2);padding:7px 0 7px 20px;position:relative;border-top:1px solid var(--line2);line-height:1.62;}
+  .signal li:first-child{border-top:none;}
+  .signal li::before{content:"";position:absolute;left:3px;top:15px;width:5px;height:5px;border-radius:50%;background:#d6cec4;}
+  .signal li b{color:var(--ink);font-weight:600;}
+  .signal li.hit::before{background:var(--green);}
+  .signal li.no{color:var(--muted);}
+
+  .tl{position:relative;padding-left:26px;}
+  .tl::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--line);}
+  .ti{position:relative;padding:0 0 19px 0;}
+  .ti:last-child{padding-bottom:0;}
+  .ti::before{content:"";position:absolute;left:-25px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--paper);border:1.5px solid #c9c0b5;}
+  .ti.key::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  .ti.miss::before{background:#fff;border-color:var(--red);box-shadow:0 0 0 3px #f7e6e4;}
+  .ti.good::before{background:#fff;border-color:var(--green);box-shadow:0 0 0 3px #e6efe8;}
+  .ti.quiet::before{background:#fff;border-color:#cfc6bb;}
+  .ti-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .ti-date{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .ti-title{font-size:14.5px;font-weight:600;}
+  .ti-body{font-size:13.4px;color:var(--ink2);margin-top:2px;line-height:1.68;}
+  .ti-body em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 62%,var(--accent-soft) 62%);padding:0 1px;}
+  .ti-body.small{font-size:12.6px;color:var(--muted);}
+  .ti-body .tagx{display:inline-block;font-size:10.5px;letter-spacing:.06em;padding:1px 7px;border-radius:9px;background:var(--line2);color:var(--ink2);margin-left:6px;vertical-align:1px;}
+
+  .pats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .pat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .pat .idx{font-size:11px;letter-spacing:.14em;color:var(--accent);font-weight:600;}
+  .pat h4{font-size:14.5px;font-weight:650;margin:6px 0 7px;line-height:1.45;}
+  .pat p{font-size:13px;color:var(--ink2);line-height:1.62;}
+  .pat .fix{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--green);}
+  .pat .fix b{font-weight:650;}
+
+  .loop{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:6px;align-items:stretch;}
+  .step{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;}
+  .step .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:700;align-items:center;justify-content:center;margin-bottom:6px;}
+  .step b{display:block;font-size:13.5px;}
+  .step p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+  .arw{color:#cfc6bb;font-size:17px;display:flex;align-items:center;justify-content:center;}
+  .loop-back{text-align:center;font-size:12.5px;color:var(--red);margin-top:10px;}
+  .cut{margin-top:14px;background:#f3f7f4;border:1px solid #d7e4da;border-radius:12px;padding:16px 18px;font-size:13.5px;color:#33513c;line-height:1.72;}
+  .cut b{color:#2c4634;}
+
+  .q{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:17px 20px 14px;margin-bottom:12px;}
+  .q-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+  .q-date{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .q-who{font-size:10.5px;padding:1px 8px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:650;}
+  .q-who.me{background:#eef1f4;color:#5b6b7a;}
+  .q-said{font-size:15px;font-weight:600;line-height:1.68;margin-bottom:9px;padding-left:11px;border-left:2px solid var(--line);}
+  .q-row{display:grid;grid-template-columns:88px 1fr;gap:10px;padding:7px 0;border-top:1px dashed var(--line2);font-size:13.4px;color:var(--ink2);line-height:1.72;}
+  .q-row .q-lab{font-size:11px;color:var(--muted);letter-spacing:.05em;padding-top:3px;}
+  .q-row.fix{color:#33513c;}
+  .q-row.fix .q-lab{color:var(--green);font-weight:600;}
+  .q-row.warn{color:#8a4a3f;}
+  .q-row.warn .q-lab{color:var(--red);font-weight:600;}
+
+  .astro{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .a-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 20px 14px;}
+  .a-card h4{font-size:14.5px;margin-bottom:3px;}
+  .a-card .a-sub{font-size:11.5px;color:var(--muted);letter-spacing:.06em;margin-bottom:10px;}
+  .a-card ul{list-style:none;}
+  .a-card li{font-size:13.2px;color:var(--ink2);padding:6px 0 6px 14px;position:relative;border-top:1px solid var(--line2);line-height:1.62;}
+  .a-card li:first-child{border-top:none;}
+  .a-card li::before{content:"";position:absolute;left:0;top:14px;width:4px;height:4px;border-radius:50%;background:#d6cec4;}
+  .a-card li b{color:var(--ink);font-weight:600;}
+
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+  .duo .d-box{border-radius:14px;padding:18px 20px;font-size:13.4px;line-height:1.75;}
+  .duo .d-box h4{font-size:13px;letter-spacing:.06em;margin-bottom:8px;font-weight:650;}
+  .duo .bad{background:#fdf6f4;border:1px solid #efd8d1;color:#7d4238;}
+  .duo .bad h4{color:var(--red);}
+  .duo .good{background:#f4f9f5;border:1px solid #d7e4da;color:#33513c;}
+  .duo .good h4{color:var(--green);}
+  .duo b{font-weight:650;}
+
+  .bz{width:100%;border-collapse:collapse;margin:4px 0 16px;}
+  .bz th,.bz td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line2);}
+  .bz th{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.1em;}
+  .bz td:first-child{text-align:left;font-size:12px;color:var(--muted);letter-spacing:.06em;font-weight:500;}
+  .bz td{font-size:19px;font-weight:650;letter-spacing:.1em;}
+  .bz tr.her td{color:var(--accent);}
+  .bz tr.me td{color:var(--amber);}
+  .bz tr.me td:first-child{color:var(--muted);}
+  .bz tr.her td:first-child{color:var(--muted);}
+
+  .he{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .he .h-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px 12px;}
+  .he h4{font-size:12.5px;letter-spacing:.08em;margin-bottom:8px;}
+  .he .h-box.hit h4{color:var(--green);}
+  .he .h-box.miss h4{color:var(--red);}
+  .he ul{list-style:none;}
+  .he li{font-size:13px;color:var(--ink2);padding:6px 0 6px 13px;position:relative;border-top:1px solid var(--line2);line-height:1.66;}
+  .he li:first-child{border-top:none;}
+  .he li::before{content:"";position:absolute;left:0;top:14px;width:4px;height:4px;border-radius:50%;background:#d6cec4;}
+  .he li b{color:var(--ink);font-weight:600;}
+
+  .winbar{display:flex;gap:8px;margin-bottom:14px;}
+  .seg{flex:1;border-radius:12px;padding:14px 14px 12px;border:1px solid var(--line);background:var(--paper);}
+  .seg b{display:block;font-size:12.5px;margin-bottom:3px;font-variant-numeric:tabular-nums;}
+  .seg span{display:block;font-size:11.8px;color:var(--ink2);line-height:1.5;min-height:37px;}
+  .seg em{display:inline-block;margin-top:9px;font-style:normal;font-size:10.5px;letter-spacing:.08em;padding:2px 8px;border-radius:10px;background:var(--line2);color:var(--ink2);}
+  .seg.now{opacity:.9;}
+  .seg.go{border-color:#bcd3c3;background:#f4f9f5;}
+  .seg.go em{background:#dcebe0;color:#3d6249;}
+  .seg.hold em{background:#f6eeda;color:#8a6a2a;}
+  .seg.next em{background:#e8eef4;color:#41607a;}
+
+  .next{background:linear-gradient(180deg,#fffaf6 0%,#ffffff 55%);border:1px solid #ecd6c9;border-radius:16px;padding:26px;position:relative;overflow:hidden;margin-bottom:16px;}
+  .next::before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:linear-gradient(180deg,var(--accent),#e0a184);}
+  .next .when{font-size:12.5px;letter-spacing:.1em;color:var(--accent);font-weight:650;margin-bottom:8px;}
+  .next h2{font-size:19px;font-weight:680;margin-bottom:14px;}
+  .script{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:13px 16px;font-size:14.5px;line-height:1.8;margin-bottom:14px;}
+  .script.alt{border-left-color:#c9a06f;}
+  .script.alt2{border-left-color:#9bb0a3;}
+  .lab{font-size:11.5px;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;}
+
+  .rules3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;}
+  .r3{border-top:2px solid var(--line);padding-top:10px;font-size:13px;color:var(--ink2);line-height:1.66;}
+  .r3 b{display:block;color:var(--ink);font-weight:650;font-size:13.5px;margin-bottom:3px;}
+
+  .hold{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+  .hold h3{font-size:15px;font-weight:660;margin-bottom:8px;}
+  .hold p{font-size:13.8px;color:var(--ink2);line-height:1.78;}
+  .hold ul{margin:8px 0 0 0;list-style:none;}
+  .hold li{font-size:13.6px;color:var(--ink2);padding:5px 0 5px 16px;position:relative;line-height:1.7;}
+  .hold li::before{content:"";position:absolute;left:2px;top:14px;width:4px;height:4px;border-radius:50%;background:#d6cec4;}
+  .hold b{color:var(--ink);font-weight:650;}
+
+  .emerg{background:#fbf7f2;border:1px dashed #ddc9b4;border-radius:14px;padding:18px 20px;font-size:13.5px;color:var(--ink2);line-height:1.78;}
+  .emerg h4{font-size:13px;color:#8a6a2a;margin-bottom:8px;letter-spacing:.05em;}
+  .emerg ol{margin-left:18px;}
+  .emerg li{margin-bottom:5px;}
+
+  .closing{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 26px 22px;text-align:center;}
+  .closing .c-main{font-size:16.5px;line-height:1.85;font-weight:600;}
+  .closing .c-sub{font-size:13.5px;color:var(--ink2);margin-top:10px;line-height:1.8;}
+
+  .cl{width:100%;border-collapse:collapse;}
+  .cl td{padding:9px 6px;border-bottom:1px solid var(--line2);vertical-align:top;font-size:13.2px;color:var(--ink2);line-height:1.62;}
+  .cl tr:last-child td{border-bottom:none;}
+  .cl td:first-child{width:104px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12.5px;letter-spacing:.02em;}
+  .cl td b{color:var(--ink);font-weight:600;}
+
+  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+  /* ===== 历史记录 ===== */
+  .hist-btn{position:fixed;right:24px;bottom:24px;z-index:60;background:var(--accent);color:#fff;border:none;border-radius:24px;padding:11px 19px;font-size:13.5px;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(189,90,62,.30);letter-spacing:.05em;transition:background .15s,transform .15s;}
+  .hist-btn:hover{background:#a94f35;transform:translateY(-1px);}
+  .hist-modal{position:fixed;inset:0;background:rgba(33,30,27,.45);z-index:70;display:none;align-items:center;justify-content:center;padding:24px;}
+  .hist-modal.on{display:flex;}
+  .hist-box{background:var(--paper);border-radius:16px;width:min(780px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.28);}
+  .hist-head{display:flex;align-items:baseline;gap:12px;padding:18px 22px 15px;border-bottom:1px solid var(--line);}
+  .hist-head h3{font-size:16px;font-weight:650;}
+  .hist-head .n{font-size:12px;color:var(--muted);}
+  .hist-close{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:0 2px;}
+  .hist-close:hover{color:var(--ink);}
+  .hist-body{overflow:auto;padding:4px 22px 24px;}
+  .hist-item{padding:15px 0 13px;border-bottom:1px dashed var(--line);}
+  .hist-item:last-child{border-bottom:none;}
+  .hist-meta{display:flex;gap:10px;align-items:baseline;margin-bottom:5px;}
+  .hist-idx{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums;}
+  .hist-time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .hist-files{font-size:11.5px;color:var(--muted);line-height:1.62;margin-bottom:6px;word-break:break-all;}
+  .hist-text{font-size:13.5px;color:var(--ink2);line-height:1.82;white-space:pre-wrap;}
+  .hist-tip{font-size:11.5px;color:var(--muted);margin:14px 0 0;line-height:1.6;}
+
+  @media (max-width:860px){
+    body{padding:28px 16px 60px;}
+    h1{font-size:26px;}
+    .kpis,.layers{grid-template-columns:repeat(2,1fr);}
+    .cols2,.pats,.rules3,.astro,.he,.duo{grid-template-columns:1fr;}
+    .loop{grid-template-columns:1fr;gap:8px;}
+    .arw{transform:rotate(90deg);height:14px;}
+    .winbar{flex-direction:column;}
+    .verdict .v-main{font-size:20px;}
+    .q-row{grid-template-columns:74px 1fr;gap:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Relationship Dashboard</div>
+    <h1>关系进展看板 · <span>莫佳雯</span></h1>
+    <div class="sub">
+      记录期 2026.10.08 — 11.07　·　第 <b>31</b> 天　·　
+      当前状态：<b>她没回一条不需要回的消息</b>——而你在考虑"断联两周"
+    </div>
+    <div class="rule"></div>
+    <nav class="quicknav">
+      <a href="#verdict">① 一句话判断</a>
+      <a href="#chart">② 温度曲线</a>
+      <a href="#loop">③ 你的焦虑循环</a>
+      <a href="#quotes">④ 对话逐句拆解</a>
+      <a href="#astro">⑤ 摩羯 × 双鱼</a>
+      <a href="#bazi">⑥ 八字合盘</a>
+      <a href="#window">⑦ 时间窗口</a>
+      <a href="#next">⑧ 下一步</a>
+      <a href="#rules">⑨ 止急规则</a>
+      <a href="#changelog">⑩ 版本记录</a>
+    </nav>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi hot">
+      <div class="k-label">记录天数</div>
+      <div class="k-val">31<small>天</small></div>
+      <div class="k-note">从加微信到当面开口</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">线上长聊</div>
+      <div class="k-val">7<small>场</small></div>
+      <div class="k-note">单场最长 4 小时 50 分</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label">线下接触</div>
+      <div class="k-val">8<small>次</small></div>
+      <div class="k-note">食堂 · 楼下 · 停车场 ×2 · 会议室 · 办公室 · 楼梯</div>
+    </div>
+    <div class="kpi hot">
+      <div class="k-label">校门外见面</div>
+      <div class="k-val">0<small>次</small></div>
+      <div class="k-note">开口 3 次，0 次成行</div>
+    </div>
+  </div>
+
+  <!-- ============ 判断 ============ -->
+  <section id="verdict" style="margin-bottom:0;">
+    <div class="verdict">
+      <div class="v-lab">一句话判断 · 11.01 09:30</div>
+      <div class="v-main">
+        她喜欢你这个人，<br>
+        但还没喜欢到<em>"想跟你谈恋爱"</em>那一步。
+      </div>
+      <div class="v-sub">
+        <b>高浓度的好感 · 明确的舒适 · 尚未跨越的边界。</b><br>
+        她享受跟你说话，这是真的。但她还没把你放进"恋人"那个格子，也还没准备好在校园之外跟你有交集。
+        这两件事之间，隔着一次成功的校外单独见面——不是隔着更多的聊天。
+      </div>
+      <div class="v-after">
+        11.02：她用"昨天没看到"把 11.01 抹平，再把你拉进她的日程——<b>她要的是你把节奏放对，不是推开你</b>。<br>
+        11.03：停车场三分钟，"遇到、接梗、聊两句、先走"。<b>节奏终于对了。</b><br>
+        11.04：她主动三次，你却在问"她是不是不喜欢我"。<b>关系没退，是"食堂没碰上"被你当成了判决。</b><br>
+        11.05：一块巧克力，她 3 分钟回"谢谢刘局哈哈哈哈"，还替你给了陆科。
+        <b>小动作的回报率，比你写十条长消息都高。</b><br>
+        11.06：白天她先"哈喽刘局"、手臂贴着手臂不躲、放着电梯不坐陪你走楼梯、还放慢了脚步。
+        <b>晚上一句"出来散步"，没有回。</b><br>
+        11.07：你读了一堆"回避型"的文章，决定"不理她两周"。<b>诊断错了，处方就错了。</b>
+      </div>
+    </div>
+
+    <div class="layers">
+      <div class="layer l1">
+        <div class="l-name">同事 / 朋友层</div>
+        <div class="l-pct">95<span style="font-size:13px;color:var(--muted);">%</span></div>
+        <div class="bar"><i style="width:95%"></i></div>
+        <div class="l-note">满分。主动找你、发语音、自曝情绪、记得你的细节——这不是客气，客气撑不了 24 天。</div>
+      </div>
+      <div class="layer l2">
+        <div class="l-name">好感 / 吸引层</div>
+        <div class="l-pct">70<span style="font-size:13px;color:var(--muted);">%</span></div>
+        <div class="bar"><i style="width:70%"></i></div>
+        <div class="l-note">她看你的脸、说你憔悴、半夜回你"羡慕了"。你对她是有分量的。</div>
+      </div>
+      <div class="layer l3">
+        <div class="l-name">恋爱对象层</div>
+        <div class="l-pct">25<span style="font-size:13px;color:var(--muted);">%</span></div>
+        <div class="bar"><i style="width:25%"></i></div>
+        <div class="l-note">24 天，零次问你感情状态，零次接校外邀约，零次把"我们"说成两个人。她在门外，没进来。</div>
+      </div>
+      <div class="layer l4">
+        <div class="l-name">实测进度</div>
+        <div class="l-pct">0<span style="font-size:13px;color:var(--muted);">次</span></div>
+        <div class="bar"><i style="width:2%"></i></div>
+        <div class="l-note">校外单独见面：0 次。这是唯一能把前三层变成第四层的动作。</div>
+      </div>
+    </div>
+
+    <div class="alert" style="background:#f8fbf8;border-color:#d7e4da;">
+      <h3 style="color:#3d6249;">11.02 · 这一天的含金量，比过去一周加起来都高</h3>
+      <p>10:18 她主动把前天那件事了了："我靠哈哈哈哈，昨天没看到刘局消息。"
+      ——<b>她选择了"没看到"这个说法，而不是装无事发生。</b>这是一个成年人给的台阶：我不会拿这个说你，你也别再提。</p>
+      <p>14:40 她问"你等下去咩刘局"。<b>26 天里第一次，她主动把你拉进她的日程</b>——不是回你，是叫你一起去。然后你真的去了。</p>
+      <p>停车场的"哈喽"；你跑过去挡伞；上楼；开会并排坐；她跟你说悄悄话；她嫌会议太久说"我想溜了"；
+      她让你帮她拿本子，又张罗着帮你把笔记本和笔带上去。
+      <b>这不是"她给你面子"，这是"她把你当自己人"。</b></p>
+      <p>18:35 下班路上，她又主动问"还堵吗"。<b>一天之内，她主动了三次。</b></p>
+      <p><b>但同一批证据还有另一面：</b>她把耳朵递过来，身体却不往你这边倾；跷腿是往反方向；
+      你说加个 QQ，她说"只用微信了"。<b>亲近，但线还在。</b>
+      这不矛盾——这就是一个人"很舒服，但还没决定"的样子。</p>
+    </div>
+
+    <div class="alert" style="background:#f8fbf8;border-color:#d7e4da;">
+      <h3 style="color:#3d6249;">10.31 晚 · 你"没忍住"的那一下，其实是这段时间最好的一手</h3>
+      <p>
+        19:50 你发了一段萨克斯。<b>21:43 她回了两条语音</b>："太厉害了，刘局，我的天，太厉害了，太好听了。你应该去搞艺术的。"
+      </p>
+      <p>
+        22:09 你把自己往前推了一步："报名匠心晚会，选你当主唱""我可以带你搞艺术""我给你写首歌"。
+        22:12 你说"想象力花光了，早睡"——<b>主动收了</b>。
+        <b>22:37 她又回来了</b>："选我当主唱啊？唱什么啊，太逗了""晚安！"
+        <b>22:38 再补一句</b>："我靠，受宠若惊啊刘局！！！给我写首歌，才华横溢啊[流泪]"
+      </p>
+      <p>
+        你 22:12 已经说了晚安，她 22:37 又回来找你——<b>这是她第一次主动把已经关掉的对话重新打开。</b>
+        而且她问的是"唱什么啊"。那是一个问题，是一道门缝。
+      </p>
+      <p>
+        <b>为什么这一手比"散步"高明：</b>散步是"我想跟你待着"，主唱是"我需要你"。
+        前者是请求，后者是角色。她答应的是"当主唱"，不是"跟你约会"——
+        门槛低到她自己都没意识到自己答应了什么。
+      </p>
+    </div>
+
+    <div class="alert">
+      <h3>为什么"好感"不等于"想跟你在一起"</h3>
+      <p>
+        一个人可以跟你聊 4 小时 50 分，可以发 14 条语音，可以说"时刻不忘小莫，我的天"，
+        可以说"今天比较 emo"——同时，<b>完全没有</b>打算跟你单独出去。
+        这两件事不矛盾。它们只是分别属于"朋友"和"恋人"两个不同的账户。
+      </p>
+      <p>
+        你现在的所有痛苦，来自把前一个账户的余额，当成了后一个账户的余额。
+        每天看一眼，觉得"都聊这么多了怎么还没进度"——因为<b>聊天不会产生恋爱进度，只有"单独相处"会</b>。
+      </p>
+      <p>
+        这不是坏消息。恰恰相反：<b>她给的"朋友账户"余额极高，说明门槛已经很低了。</b>
+        你缺的不是她的好感，是一次把关系搬出校园的动作。而这个动作，现在还不是时候。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 曲线 ============ -->
+  <section id="chart">
+    <div class="sec-head">
+      <h2>温度曲线（已拆成两条线）</h2>
+      <span class="tag">TEMPERATURE / BASELINE</span>
+      <span class="ln"></span>
+    </div>
+    <div class="panel">
+      <div class="legend">
+        <span><i class="l-temp"></i>当日交互温度（聊得多热）</span>
+        <span><i class="l-base"></i>关系基线（累积熟悉度·估）</span>
+      </div>
+      <svg viewBox="0 0 900 345" role="img" aria-label="关系温度与基线曲线">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#bd5a3e" stop-opacity="0.13"/>
+            <stop offset="100%" stop-color="#bd5a3e" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <line class="grid" x1="60" y1="30"  x2="870" y2="30"/>
+        <line class="grid" x1="60" y1="90"  x2="870" y2="90"/>
+        <line class="grid" x1="60" y1="150" x2="870" y2="150"/>
+        <line class="grid" x1="60" y1="210" x2="870" y2="210"/>
+        <line class="grid" x1="60" y1="270" x2="870" y2="270" stroke="#e9e2d8"/>
+
+        <text class="axis" x="46" y="34"  text-anchor="end">10</text>
+        <text class="axis" x="46" y="94"  text-anchor="end">8</text>
+        <text class="axis" x="46" y="154" text-anchor="end">6</text>
+        <text class="axis" x="46" y="214" text-anchor="end">4</text>
+        <text class="axis" x="46" y="274" text-anchor="end">2</text>
+
+        <path d="M60,75 L117,210 L174,105 L231,60 L289,51 L346,75 L403,150 L460,105 L517,96 L574,78 L631,93 L689,108 L746,105 L803,84 L860,126 L860,270 L60,270 Z" fill="url(#areaGrad)"/>
+
+        <line x1="460" y1="30" x2="460" y2="270" stroke="#d9a08e" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"/>
+        <text class="axis-x" x="460" y="19" text-anchor="middle" fill="#bd5a3e">10.30 当面邀约</text>
+        <text class="axis-x on" x="862" y="19" text-anchor="end">今天</text>
+
+        <polyline points="60,192 117,186 174,177 231,162 289,147 346,141 403,138 460,135 517,123 574,111 631,105 689,99 746,96 803,93 860,90"
+                  fill="none" stroke="#4e7a5c" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>
+        <circle cx="860" cy="90" r="4.5" fill="#4e7a5c" stroke="#fff" stroke-width="2"/>
+
+        <polyline points="60,75 117,210 174,105 231,60 289,51 346,75 403,150 460,105 517,96 574,78 631,93 689,108 746,105 803,84 860,126"
+                  fill="none" stroke="#bd5a3e" stroke-width="2.2"
+                  stroke-linejoin="round" stroke-linecap="round"/>
+
+        <circle class="peak-ring" cx="289" cy="51" r="11"/>
+        <circle class="peak-ring" cx="289" cy="51" r="18" opacity="0.13"/>
+
+        <circle cx="60"  cy="75"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="117" cy="210" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="174" cy="105" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="231" cy="60"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="289" cy="51"  r="5" fill="#bd5a3e" stroke="#fff" stroke-width="2"/>
+        <circle cx="346" cy="75"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="403" cy="150" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="460" cy="105" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="517" cy="96"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="574" cy="78"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="631" cy="93"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="689" cy="108" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="746" cy="105" r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="803" cy="84"  r="4" fill="#fff" stroke="#bd5a3e" stroke-width="2"/>
+        <circle cx="860" cy="126" r="5" fill="#bd5a3e" stroke="#fff" stroke-width="2.6"/>
+
+        <text class="val"    x="60"  y="61"  text-anchor="middle">8.5</text>
+        <text class="val"    x="117" y="230" text-anchor="middle">4.0</text>
+        <text class="val"    x="174" y="91"  text-anchor="middle">7.5</text>
+        <text class="val"    x="231" y="46"  text-anchor="middle">9.0</text>
+        <text class="val on" x="289" y="36"  text-anchor="middle">9.3</text>
+        <text class="val"    x="346" y="61"  text-anchor="middle">8.5</text>
+        <text class="val"    x="403" y="168" text-anchor="middle">6.0</text>
+        <text class="val"    x="460" y="91"  text-anchor="middle">7.5</text>
+        <text class="val"    x="517" y="82"  text-anchor="middle">7.8</text>
+        <text class="val"    x="574" y="64"  text-anchor="middle">8.4</text>
+        <text class="val"    x="631" y="79"  text-anchor="middle">7.9</text>
+        <text class="val"    x="689" y="124" text-anchor="middle">7.4</text>
+        <text class="val"    x="746" y="121" text-anchor="middle">7.5</text>
+        <text class="val"    x="803" y="70"  text-anchor="middle">8.2</text>
+        <text class="val on" x="860" y="142" text-anchor="middle">6.8</text>
+
+        <text class="axis-x"    x="60"  y="298" text-anchor="middle">10.23</text>
+        <text class="axis-x"    x="117" y="298" text-anchor="middle">10.24</text>
+        <text class="axis-x"    x="174" y="298" text-anchor="middle">10.25</text>
+        <text class="axis-x"    x="231" y="298" text-anchor="middle">10.27</text>
+        <text class="axis-x"    x="289" y="298" text-anchor="middle">10.28</text>
+        <text class="axis-x"    x="346" y="298" text-anchor="middle">10.29午</text>
+        <text class="axis-x"    x="403" y="298" text-anchor="middle">10.29下</text>
+        <text class="axis-x"    x="460" y="298" text-anchor="middle">10.30</text>
+        <text class="axis-x"    x="517" y="298" text-anchor="middle">10.31</text>
+        <text class="axis-x"    x="574" y="298" text-anchor="middle">11.02</text>
+        <text class="axis-x"    x="631" y="298" text-anchor="middle">11.03</text>
+        <text class="axis-x"    x="689" y="298" text-anchor="middle">11.04</text>
+        <text class="axis-x"    x="746" y="298" text-anchor="middle">11.05</text>
+        <text class="axis-x"    x="803" y="298" text-anchor="middle">11.06</text>
+        <text class="axis-x on" x="860" y="298" text-anchor="middle">11.07</text>
+      </svg>
+      <div class="chart-note">
+        <p><b>11.07 掉到 6.8——不是关系掉了，是今天什么都没发生。</b>
+        你中午发了一条"报到"（去官塘拿麦克风架），她没回。那条消息<b>本来就不需要回</b>。
+        把"她没回一条不需要回的消息"读成"她不理我"，这才是今天真正发生的事。</p>
+        <p><b>10.30 的红线是 7.5，可你就是在那个下午被当面拒绝了。</b>
+        这就是为什么"当日的热"不能当"关系的进度"。</p>
+        <p><b class="gn">看绿线：它已经连续往上走了七天，今天也没停。</b>
+        红线是"今天有没有说话"，绿线是"她还会不会为你放弃电梯"。
+        <b>你每天盯的，是那条会骗你的线。</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 焦虑循环 ============ -->
+  <section id="loop">
+    <div class="sec-head">
+      <h2>你的焦虑循环（这才是真正在拖慢关系的东西）</h2>
+      <span class="tag">THE LOOP</span>
+      <span class="ln"></span>
+    </div>
+    <div class="loop">
+      <div class="step">
+        <span class="n">1</span>
+        <b>她回得慢</b>
+        <p>1 小时 54 分。周六上午。</p>
+      </div>
+      <div class="arw">→</div>
+      <div class="step">
+        <span class="n">2</span>
+        <b>你翻译成"她冷"</b>
+        <p>"我是不是不该周末理她""是不是别再打扰她了"</p>
+      </div>
+      <div class="arw">→</div>
+      <div class="step">
+        <span class="n">3</span>
+        <b>你加码</b>
+        <p>多发、追问、找个由头约她</p>
+      </div>
+      <div class="arw">→</div>
+      <div class="step">
+        <span class="n">4</span>
+        <b>她感到被索取</b>
+        <p>回得更慢、更客气，从语音退回文字</p>
+      </div>
+    </div>
+    <div class="loop-back">↩ 然后回到第 1 步，而且每一轮都更快</div>
+    <div class="cut">
+      <b>唯一能打断的地方是第 2 步。</b>
+      你控制不了她回多快，但你能改掉"慢 = 冷"这个翻译。
+      她回得慢，只允许自己想一个原因：<b>她在忙。</b>不许想第二个。想第二个就是加戏，加戏就会做出变形动作。
+    </div>
+    <div class="pats" style="margin-top:14px;">
+      <div class="pat">
+        <div class="idx">LOOP 02</div>
+        <h4>用玩笑的壳包邀约</h4>
+        <p>"就算是请你吃饭都行""吃肯德基吗""金粒门要去看看吗"——三次都想约，三次都包在段子里。壳太厚，她接不到；接不到，你又觉得被拒。</p>
+        <div class="fix">改：<b>时间 + 地点 + 时长 + 可退出，说全。</b></div>
+      </div>
+      <div class="pat">
+        <div class="idx">LOOP 03</div>
+        <h4>受不了"球在她手上"的那几秒</h4>
+        <p>抛出去就马上收回来。她没回，你一分钟后就自己转话题；她拒了，你替她找理由。因为你等不了那三秒。</p>
+        <div class="fix">改：<b>抛出去，然后闭嘴。</b></div>
+      </div>
+      <div class="pat">
+        <div class="idx">LOOP 04</div>
+        <h4>把她变成"必须给我答案的人"</h4>
+        <p>你越想要一个答案，她越感到"我不答应他会很难受"。于是她不敢说真话，只能拖。而拖，又被你读成冷淡。</p>
+        <div class="fix">改：<b>给她一个"拒绝也不尴尬"的出口。</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 逐句拆解 ============ -->
+  <section id="quotes">
+    <div class="sec-head">
+      <h2>对话逐句拆解 · 她到底在说什么</h2>
+      <span class="tag">LINE BY LINE</span>
+      <span class="ln"></span>
+    </div>
+
+    <div class="alert" style="margin-bottom:14px;">
+      <h3>八句话里有一个共同的规律</h3>
+      <p><b>她讲自己，你讲系统。</b>她讲"emo"，你讲"我也没词儿了"；她讲"想去见新鲜的人"，你讲排课和水课；她讲"揭牌没去成"，你讲"开会是有参会名单的"。</p>
+      <p>改法只有一个：<b>她讲完一件事，你的下一句必须带一个"你"字。</b>"你在那儿怎么样？""你是不是也……""那你后来怎么弄的？"——你不是不知道说什么，你是在找"下一句该讲我的什么"。</p>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.28 12:13</span><span class="q-who">她</span></div>
+      <div class="q-said">"刘局，今天感觉有点憔悴啊"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>她在看你的脸，而且看出来了。同事不会说这个，客气也不会。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>接着聊上课、督导表格——把她的注意力又转回了工作。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>"被课磨的。你倒是气色不错，是不是偷偷养生。"——承认 + 还回去，一句就够。</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.29 14:39</span><span class="q-who">她</span></div>
+      <div class="q-said">"不要天天在办公室了" / "我要接触点新鲜的学生" / "我也要上水课！"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>她在喊"我闷坏了"。这是她递给你的最好一根绳子——她自己说了想出去。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>顺着聊排课、水课、教务科。信息接住了，情绪没接住。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>把"闷"翻译成"出去走"："那别光在办公室闷着。周三下班，江边透透气？半小时。"</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.29 17:37</span><span class="q-who">她</span></div>
+      <div class="q-said">"今天我比较 emo" / "要回家疗愈了"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>24 天里最直白的一次"我需要人"。她不是汇报状态，她是在你面前卸甲。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>"今天我也没词儿了。"——把她的情绪接成了"我也累"，门关上了。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>先接情绪，再一句话给选项："emo 了？那别回家疗愈了，我请你吃个甜的，比躺着管用。"——她要是想回家，会笑着说"算了"；她要是那根弦松了，就成立了。<b>那一刻，是这个月唯一一次她主动把门开给你。</b></p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.30 15:31</span><span class="q-who me">你</span></div>
+      <div class="q-said">"万象的金粒门今天开了啵 要去看看吗" →（她没回）→ 15:32 你自己转去讲调课</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>她不是没看见。这个邀约没有时间、没有时长、没有"可以拒绝"的出口——她只能装没看见。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>一分钟后就自己把球收了。这是你最典型的动作：受不了球在她手上的那几秒。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>"周六万象新开了个金粒门，我想去看看。你要是有空一起；不想动就改天，我一个人去也行。"——具体，且给了出口。</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.30 17:30 · 停车场</span><span class="q-who me">你</span></div>
+      <div class="q-said">"想不想跟我出去吃饭？"　她："今天不去了。"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>全场信息量最大的一句。她说的是"<b>今天</b>"，不是"不去"——她在软化，也在留门。但她确实拒绝了。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>没追问、没纠缠——这是对的。但你紧接着补了一句"是啊 今天太累了"，等于替她把门关上了。她说"今天"是留口子，你把它改成了结案陈词。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>当场只说"行，那你今天好好歇着，改天"，然后转身走。被拒之后那一句话，决定她下次敢不敢答应。</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.30 17:43 / 18:51</span><span class="q-who">她</span></div>
+      <div class="q-said">"下班！" …… "哈哈哈哈"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>被拒之后，她还在主动开话题、还在笑。<b>她拒绝的是"那顿饭"，不是你这个人。</b></p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>接住了，还聊到了 18:51。很好。</p></div>
+      <div class="q-row fix"><span class="q-lab">记住</span><p>这是"没凉"最硬的证据。别自己把它读成"她在敷衍我"。</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.31 10:22 → 12:16</span><span class="q-who">她</span></div>
+      <div class="q-said">你问体检。她隔 1 小时 54 分，回语音："我还没体检，他不是到 11 月 10 号吗？我记得。"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>周六上午，两小时，正常。语音 + 纠错 = 认真。敷衍的人会打字"还没呢"。</p></div>
+      <div class="q-row"><span class="q-lab">你当时</span><p>"是啵是啵 记忆出现偏差"——可以，但姿态有点低。</p></div>
+      <div class="q-row fix"><span class="q-lab">更好的接法</span><p>"那我下周去。你抓紧，别拖到最后一天。"——给关心，不给压力，然后主动收。</p></div>
+    </div>
+
+    <div class="q">
+      <div class="q-head"><span class="q-date">10.27 18:50</span><span class="q-who me">你</span></div>
+      <div class="q-said">"陆科说办公室也新来一个莫老师问我有没有问她有没有男朋友"　她："你们怎么聊这种问题" / "有没有八卦"</div>
+      <div class="q-row"><span class="q-lab">她在说什么</span><p>她把"有没有男朋友"绕过去了。既没承认，也没否认。</p></div>
+      <div class="q-row warn"><span class="q-lab">唯一的信息缺口</span><p>这是整个局里唯一能改变判断的信息，而且它到现在还是空的。</p></div>
+      <div class="q-row warn"><span class="q-lab">不要做的事</span><p>不要打听，不要通过陆科问，不要试探。你去打听，就从"有趣的人"变成"危险的人"。这个答案只能她自己给，或者由一次邀约的结果告诉你。</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 节点 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>关键节点</h2>
+      <span class="tag">MILESTONES</span>
+      <span class="ln"></span>
+    </div>
+    <div class="panel">
+      <div class="tl">
+        <div class="ti">
+          <div class="ti-head"><span class="ti-date">10.08</span><span class="ti-title">加微信 · 纯工作对接</span></div>
+          <div class="ti-body small">你备注"2026新教师入职培训 发展规划处 刘健余"。她叫你"刘老师"。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.23</span><span class="ti-title">4 小时 50 分的长聊</span></div>
+          <div class="ti-body">跨下班、跨晚饭、跨周五夜。她第一次发语音，共 14 条；称呼变成<em>"我的哥""刘局"</em>。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.25</span><span class="ti-title">她第一次先开口</span></div>
+          <div class="ti-body">"公积金缴的比例是多少咩"。更重的是下一句——你要发工资截图，她问<em>"这方便吗"</em>，在替你担心风险。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.27</span><span class="ti-title">宿舍楼下站了 30 分钟</span></div>
+          <div class="ti-body">她说"好几次想结束上楼，但总有话聊"。同一天她问你<em>"回胜利那边岂不是很远"</em>——在算你们的距离。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.28</span><span class="ti-title">你去电信学院替她招人</span></div>
+          <div class="ti-body">劝学生报"莫佳雯老师那个岗"，还立规矩"来我这的必来你那"。她发语音：<em>"时刻不忘小莫，我的天。""真是感人至极。"</em></div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.29 12:06</span><span class="ti-title">她说"我现在已经去食堂了"</span></div>
+          <div class="ti-body">你拔腿就跑，在打饭处开口<em>"天天打包啊？"</em>她笑了，讲今天多忙，没躲，站得很近。</div>
+        </div>
+        <div class="ti miss">
+          <div class="ti-head"><span class="ti-date">10.29 17:37</span><span class="ti-title">她说"今天比较 emo，要回家疗愈"</span></div>
+          <div class="ti-body small">最直白的一次求助。你回"今天我也没词儿了"。那一刻其实已经可以约成。</div>
+        </div>
+        <div class="ti">
+          <div class="ti-head"><span class="ti-date">10.30 中午</span><span class="ti-title">楼下，她笑着说"你去食堂吃饭吧"</span></div>
+          <div class="ti-body small">她要去部门聚餐，说不同路。走到一半突然停下要去集合，你愣在原地、下意识靠近了一步。她冲你笑，说"你去食堂吃饭吧"。</div>
+        </div>
+        <div class="ti miss">
+          <div class="ti-head"><span class="ti-date">10.30 15:31</span><span class="ti-title">"金粒门要去看看吗"</span></div>
+          <div class="ti-body small">具体地点、新店开业、说得很轻。她没回，一分钟后你自己转去讲调课。球落地，没捡。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">10.30 17:30</span><span class="ti-title">停车场，你当面开了口</span></div>
+          <div class="ti-body">你"特地"去小卖部买水，等到她取车。她冲你笑。你问<em>"想不想跟我出去吃饭？"</em>她说："今天不去了。"<br>
+          <span style="color:var(--muted);font-size:12.5px;">24 天里第一次真正的、没有玩笑包装的、会受伤的邀约。</span></div>
+        </div>
+        <div class="ti good">
+          <div class="ti-head"><span class="ti-date">10.30 18:51</span><span class="ti-title">被拒之后，她还在笑</span><span class="tagx">最重要的"没凉"证据</span></div>
+          <div class="ti-body small">"哈哈哈哈"。她没有因为你的邀约而拉开距离。这比任何表情符号都重要。</div>
+        </div>
+        <div class="ti quiet">
+          <div class="ti-head"><span class="ti-date">10.31 白天</span><span class="ti-title">安静的一天</span></div>
+          <div class="ti-body small">四条消息，间隔 1 小时 54 分，她回了语音并纠正了体检截止日期。你开始着急。现在回头看：那半天，根本不能算一天。</div>
+        </div>
+        <div class="ti good">
+          <div class="ti-head"><span class="ti-date">10.31 21:43 — 22:38</span><span class="ti-title">"选我当主唱啊？唱什么啊"</span><span class="tagx">关系拐点</span></div>
+          <div class="ti-body">你发了一段萨克斯，她两条语音夸到"你应该去搞艺术的"。你顺势说"匠心晚会选你当主唱""我给你写首歌"，然后主动说了晚安。<br>
+          <b>她 22:37 又回来了</b>："选我当主唱啊？唱什么啊，太逗了"；22:38 再补："我靠，受宠若惊啊刘局！！！给我写首歌，才华横溢啊。"<br>
+          <span style="color:var(--muted);font-size:12.5px;">她第一次主动把已经关掉的对话重新打开，还留了一个问句。</span></div>
+        </div>
+        <div class="ti miss">
+          <div class="ti-head"><span class="ti-date">11.01 11:12 → 17:59</span><span class="ti-title">"你是住这吗 下来跟我吃早餐"</span><span class="tagx">第二次邀约 · 6 小时 47 分未回</span></div>
+          <div class="ti-body small">11:11 一张照片，11:12 这一句。到 17:59 没回。
+          40 小时里的第二次，比第一次更近、更突然、没有出口。她昨晚刚把门推开一条缝，今天这一句又把门顶上了。</div>
+        </div>
+        <div class="ti good">
+          <div class="ti-head"><span class="ti-date">11.02</span><span class="ti-title">"昨天没看到刘局消息" → 一下午待在一起</span><span class="tagx">关系推进</span></div>
+          <div class="ti-body">10:18 她主动了结前天的事；14:40 她问"你等下去咩刘局"；停车场"哈喽"、挡伞、上楼；
+          开会并排坐、说悄悄话、她抱怨"我想溜了"；她帮你带笔记本和笔；18:35 她又问"还堵吗"。<br>
+          <b>一天之内，她主动三次，还把自己的日程打开给你。</b></div>
+        </div>
+        <div class="ti good">
+          <div class="ti-head"><span class="ti-date">11.03 下午</span><span class="ti-title">停车场三分钟：接梗、挡伞、唱着的"再见~"</span><span class="tagx">节奏对了</span></div>
+          <div class="ti-body">你开得慢，最后在学校停车场碰上；她跟着你进来，还是停得歪歪扭扭。你开门蹭到她车尾，
+          大喊"我还以为你这次停得不错呢"。她下车笑着说<em>"哎呀停在线内就好了嘛"</em>——<b>一点没恼</b>。<br>
+          你想显摆官塘被罚的事，她早知道；她说去拿报纸，你秒接"领快递是吗"，她笑着认，然后<em>唱着说了声"再见~"</em>。<br>
+          <b>你先走，没留恋——这是这个月最干净的一次收尾。</b></div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">11.04</span><span class="ti-title">"你长得那么好看，你不是领队，那你不白来了吗"</span><span class="tagx">第一次夸外貌</span></div>
+          <div class="ti-body">中午你提前下楼想碰她，没碰上，自己吃了饭；十分钟后看到她进食堂，你没喊。
+          <b>这一"忍"其实没必要</b>——真正的问题不是喊不喊，是你为什么提前下楼。<br>
+          13:02 你第一次直接夸她的长相。她没接、也没否认，绕去讲"别人的才能多得很"——摩羯式挡回。
+          当晚她主动了三次：问课、请教、三条语音。</div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">11.05</span><span class="ti-title">一块巧克力，两声"哈喽"</span><span class="tagx">小动作，大信任</span></div>
+          <div class="ti-body">早上她在隔壁办公室忙，你没打扰；11:00 你进去，<b>她先笑着说"哈喽"</b>，你一句话没说，放下巧克力，笑一下就走。<br>
+          11:03 她："谢谢刘局哈哈哈哈"；11:07"替你给了""陆科说谢谢你"——<b>她在同事面前替你把话说圆了</b>。<br>
+          中午食堂，她收碗路过，<b>又是她先招手</b>；你微笑，没说话。<b>两次都是她先开口。</b></div>
+        </div>
+        <div class="ti key">
+          <div class="ti-head"><span class="ti-date">11.06 下午</span><span class="ti-title">"哈喽，刘局"——她放着电梯，陪你走楼梯</span><span class="tagx">身体信号最强的一次</span></div>
+          <div class="ti-body">停车场碰见，<b>她先开口："哈喽，刘局"</b>。你靠近挡伞，右臂贴着她的左臂，<b>她没躲，继续说自己的事</b>——
+          体检没成（名单没她名字）、昨晚在机关一队打气排球、你们的科长也在。<br>
+          楼里有人等电梯，<b>她不坐电梯，跟你走楼梯</b>；上楼时她<b>特地放慢速度</b>，就为了多说两句。
+          到四楼她问"你是在六楼吗"，你说"想上去看看吗"，她说"不去了"。你转头上楼，又回头塞给她一包坚果，她很高兴："谢谢"。<br>
+          <b>19:22 你："想出来跟我散步吗，我送给你"——没有回。</b></div>
+        </div>
+        <div class="ti quiet">
+          <div class="ti-head"><span class="ti-date">11.07</span><span class="ti-title">一条"报到"，一天安静</span><span class="tagx">她在低回应期</span></div>
+          <div class="ti-body small">11:00 你发"到官塘拿电信老师的麦克风架，给他整点文绉绉的借条"，配一张图。她没回——<b>这条本来就不需要回</b>。
+          晚上你读了一堆"回避型人格"的文章，决定"不理她一两周，但线下照旧热情"。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 信号 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>信号判断</h2>
+      <span class="tag">SIGNALS</span>
+      <span class="ln"></span>
+    </div>
+    <div class="cols2">
+      <div class="signal">
+        <h3><span class="dot g"></span>绿灯 · 已确认</h3>
+        <ul>
+          <li class="hit">她两次主动先开口（10.25 公积金 / 10.29 水课）</li>
+          <li class="hit">她说的是<b>"今天"不去</b>，不是"不去"</li>
+          <li class="hit">被拒后当晚仍主动开话题、仍在笑</li>
+          <li class="hit">她注意到你："今天感觉有点憔悴啊"</li>
+          <li class="hit">她自曝情绪："今天比较 emo""要回家疗愈了"</li>
+          <li class="hit">她记住了你随口说的话，两小时后接"上水课"</li>
+          <li class="hit">今天回的是<b>语音</b>，还替你纠正了日期</li>
+          <li class="hit">她问你住哪、回家远不远（在算距离）</li>
+          <li class="hit"><b>说了晚安之后，她又回来找你</b>（22:12 → 22:37）</li>
+          <li class="hit">她主动问了"唱什么啊"——一个可以接下去的问题</li>
+          <li class="hit">她接下了"主唱"这个角色，还说"受宠若惊"</li>
+          <li class="hit">她主动把 11.01 那件事了了（"昨天没看到刘局消息"）</li>
+          <li class="hit"><b>她第一次主动把你拉进她的日程</b>（"你等下去咩刘局"）</li>
+          <li class="hit">她让你帮她拿本子，又张罗着帮你带笔记本和笔</li>
+          <li class="hit">会上她把耳朵递过来、抱怨"我想溜了"</li>
+          <li class="hit">下班路上她主动问"还堵吗"</li>
+          <li class="hit">早上她找你帮忙催材料——<b>让你有用，是信任</b></li>
+          <li class="hit">停车场你蹭到她车，她一点没恼，还笑着接梗</li>
+          <li class="hit">她用唱腔说了声"再见~"（心情好才唱）</li>
+          <li class="hit">"歪歪扭扭"从 10.29 变成你们之间的老梗</li>
+          <li class="hit">16:10 她主动问"怎么整天有课啊"——在关注你的状态</li>
+          <li class="hit">16:22 她来请教勤工助学审核——<b>让你有用</b></li>
+          <li class="hit">19:47 她连发三条语音</li>
+          <li class="hit"><b>她先笑着说"哈喽"</b>（你还没开口）</li>
+          <li class="hit">食堂收碗路过，<b>又是她先招手</b></li>
+          <li class="hit">收到巧克力 3 分钟回"谢谢刘局哈哈哈哈"</li>
+          <li class="hit">她替你给陆科，还转达"陆科说谢谢你"——<b>在同事面前替你说好话</b></li>
+          <li class="hit"><b>她先开口"哈喽，刘局"</b>（第四次她先打招呼）</li>
+          <li class="hit"><b>手臂贴着手臂，她不躲，继续说自己的事</b></li>
+          <li class="hit"><b>有电梯她不坐，跟你走楼梯</b>——避人，不避你</li>
+          <li class="hit"><b>上楼她特地放慢速度</b>，就为了多说两句</li>
+          <li class="hit">她讲体检没成、讲打排球、讲科长在场——把生活摊开给你看</li>
+        </ul>
+      </div>
+      <div class="signal">
+        <h3><span class="dot y"></span>黄灯 · 待观察　<span class="dot r" style="margin-left:6px;"></span>红线</h3>
+        <ul>
+          <li>当面邀约被缓拒一次（"今天不去了"）</li>
+          <li>她只在校园内愿意聊，一提校外就绕开</li>
+          <li>24 天，她<b>零次</b>问过你的感情状态</li>
+          <li>"有没有男朋友"被她绕过去了，没有澄清</li>
+          <li>高频"哈哈哈哈"可能是她的通用社交风格</li>
+          <li>"写首歌"是轻承诺——三分钟说了三个未来，得真的给出来</li>
+          <li>身体不往你这边倾；跷腿朝反方向——<b>亲近，但线还在</b></li>
+          <li>你说加个 QQ，她说"只用微信了"（渠道只留一个）</li>
+          <li>她和别的男生聊天很自然——你会吃醋，但那是你的课题</li>
+          <li>26 天，<b>还没有一次校外单独见面</b></li>
+          <li>你开始"开慢点找她"——是顺路还是制造偶遇，只有你自己知道</li>
+          <li>今天又提前下楼等她——"制造偶遇"的第二种形态</li>
+          <li>你三分钟内连夸两次（好看 + 才能）——一次是欣赏，两次是讨好</li>
+          <li>你又开始点评她："你的直系专业啊""好好对待孩子们"</li>
+          <li><b>两次当面只笑不说话</b>——第一次是分寸，第二次开始像冷</li>
+          <li><b>8 天内第 3 次开口约她</b>（10.30 吃饭 / 11.01 早餐 / 11.06 散步）</li>
+          <li>"想上去看看吗"被她"不去了"挡回——她要的是没人的地方</li>
+          <li><b>连着两条没回</b>（19:22 邀约 / 11:00 报到）——她在低回应期</li>
+          <li>你开始给她贴"回避型"的标签——标签会挡住人</li>
+          <li class="no">连续两次拒绝且无替代方案（尚未发生）</li>
+          <li class="no">称呼退回"刘老师"（尚未发生）</li>
+          <li class="no">公开场合刻意保持距离（尚未发生）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 星座 ============ -->
+  <section id="astro">
+    <div class="sec-head">
+      <h2>摩羯座 × 双鱼座 · 一个要"再等等"，一个要"现在告诉我"</h2>
+      <span class="tag">CAPRICORN × PISCES</span>
+      <span class="ln"></span>
+    </div>
+
+    <div class="astro">
+      <div class="a-card">
+        <h4>她 · 摩羯座</h4>
+        <div class="a-sub">12.22 生 · 土象 · 土星守护</div>
+        <ul>
+          <li><b>评估期以月/年计。</b>摩羯不靠感觉做决定，靠观察。她不是没在想，是还没想完。</li>
+          <li><b>用行动不用语言。</b>她给你的是语音、"这方便吗"、楼下等你 30 分钟——不是"我想你"。摩羯的爱是动词。</li>
+          <li><b>边界感极强。</b>学校＝工作，下班＝回家。这不是冷淡，这是她的生存方式。</li>
+          <li><b>极度讨厌被催、被公开追求、被情绪绑架。</b>你越急，她越退；你一索取，她立刻关门。</li>
+          <li><b>一旦认定，比谁都长情。</b>摩羯不轻易开始，也不轻易结束。</li>
+        </ul>
+      </div>
+      <div class="a-card">
+        <h4>你 · 双鱼座</h4>
+        <div class="a-sub">寅月生 · 水象 · 海王星守护</div>
+        <ul>
+          <li><b>感受力强，共情力强，也容易过度解读。</b>你能接住她的 emo，这是你的天赋。</li>
+          <li><b>需要回应来确认"我在你心里有位置"。</b>她一慢，你就开始怀疑自己。</li>
+          <li><b>容易把"没回"读成"拒绝"，把"慢"读成"冷"。</b>这就是今天这场慌的来源。</li>
+          <li><b>付出型，但付出后期待回报。</b>"我投入了 24 天"——这本账，她没跟你签过。</li>
+          <li><b>有才华、有温度、会照顾人。</b>这是你最大的优势，比"帅"和"有钱"耐用得多。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="d-box bad">
+        <h4>冲突点：你们正在互相踩的那只脚</h4>
+        双鱼要"你现在告诉我"，摩羯要"我再观察半年"。<br>
+        双鱼用情绪沟通，摩羯用事实沟通。<br>
+        双鱼越急越索取，摩羯越被索取越退。<br>
+        双鱼把"她不回"当危机，摩羯只是"在忙"。<br><br>
+        <b>结果：你越用力，她越安全地退回"同事"。</b>
+      </div>
+      <div class="d-box good">
+        <h4>破局点：你要做的其实只有三件</h4>
+        ① <b>降频、提质、不索取。</b>每周 2—3 次有内容的互动，远胜每天 40 条实况转播。<br>
+        ② <b>用"分享"代替"索取"。</b>发一张照片、一件有意思的事，不要求她回应。<br>
+        ③ <b>见面 &gt; 聊天。</b>摩羯是"见面型"人格。线上再热，不如一次 30 分钟的散步。<br><br>
+        <b>你的任务不是让她更快喜欢你，是让她觉得——跟你在一起，不累。</b>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 八字 ============ -->
+  <section id="bazi">
+    <div class="sec-head">
+      <h2>八字合盘 · 另一面镜子</h2>
+      <span class="tag">BAZI (参考项)</span>
+      <span class="ln"></span>
+    </div>
+    <div class="panel">
+      <table class="bz">
+        <tr><th></th><th>年柱</th><th>月柱</th><th>日柱</th><th>时柱</th></tr>
+        <tr class="her"><td>她（坤造）</td><td>庚辰</td><td>戊子</td><td>甲寅</td><td>庚午</td></tr>
+        <tr class="me"><td>你（乾造）</td><td>庚辰</td><td>戊寅</td><td>庚戌</td><td>癸未</td></tr>
+      </table>
+      <p style="font-size:11.5px;color:var(--muted);margin:-10px 0 16px;text-align:right;">截图只显示到日柱；时柱按表头"午时"推得庚午。</p>
+
+      <div class="he">
+        <div class="h-box hit">
+          <h4>合的地方（比你想的多）</h4>
+          <ul>
+            <li><b>戊癸合（你时干 × 她月干）</b>：天干五合，主"聊得来、有化学反应"。更妙的是——癸是她的正印，戊是你的偏印，<b>你们互相是对方的安全感来源</b>。她跟你聊天是舒服的，这跟她"下班就回家、emo 要疗愈"的状态正好互补。</li>
+            <li><b>寅戌半合火（你日支 × 她日支）</b>：配偶宫相合。这是合盘里最实的一条：两个人对"在一起"这件事，骨子里是向往的。</li>
+            <li><b>午未六合（你时支 × 她时支）</b>：归宿宫相合，主"能长久过日子"。</li>
+            <li><b>同为庚辰年生</b>：同岁，时代感、节奏、对世界的理解是同一套。</li>
+          </ul>
+        </div>
+        <div class="h-box miss">
+          <h4>不合的地方（也正是你正在犯的）</h4>
+          <ul>
+            <li><b>庚金克甲木（你日主 × 她日主）</b>：甲木是你的<b>财星（妻星）</b>——按命理，她正是你要找的那一类人。但庚金是斧、甲木是树：<b>斧头用来成材，不是用来砍倒</b>。你现在的问题正是"克"得太用力——讲道理、安排、纠正、"你最好是"。而<b>她的七杀正是庚金</b>，她对这种气质既被吸引、又高度警惕。<b>你越像领导，她越退。</b>这跟"刘局/莫局"的角色扮演、跟你两次说"你最好是留在校办"完全对得上。</li>
+            <li><b>辰戌冲（你日支 × 她年支）</b>：观念、家庭背景层面的摩擦。隔位，不致命，但要磨合。</li>
+            <li><b>子未害（你时支 × 她月支）</b>：沟通容易错位。你那句"开会是有参会名单的"就是典型——她讲失落，你讲制度。</li>
+            <li><b>两人都带冲</b>（你辰戌冲、她子午冲）：都是"心里有两个声音"的人。好处是互相认得出对方的拧巴；坏处是两团乱麻缠一起会更乱。<b>你得做那个先稳住的人。</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="duo" style="margin-top:0;">
+        <div class="d-box good" style="background:#fffdf8;border-color:#ecdfc8;color:#6b5528;">
+          <h4 style="color:#8a6a2a;">她是谁（从盘上看）</h4>
+          甲木生子月，坐寅禄，印旺身强——<b>直、要面子、独立、认死理、不服管、慢热</b>。<br>
+          冬月甲木最缺火：她外冷，内里非常需要"暖"。<br>
+          日支寅是比肩：<b>她要的是"平级的伙伴"，不是"爹"，也不是"粉丝"。</b><br>
+          子午冲：想安定又想自由，所以她一边说"下班就回家"，一边说"我要接触点新鲜的学生"。<br>
+          <b>寅午半合火：她放松、玩乐、被点燃的时候，最像她自己。</b>——这就是为什么"散步"比"正式吃饭"更适合她。
+        </div>
+        <div class="d-box bad" style="background:#fdf9f3;border-color:#ecdfc8;color:#6b5528;">
+          <h4 style="color:#8a6a2a;">你是谁（从盘上看）</h4>
+          庚金生寅月，辰戌未三土加戊土，<b>印极重，土多金埋</b>——想太多、内耗、需要被认可、容易"我都是为你好"。<br>
+          日支戌是印：<b>你在关系里很容易自动进入"照顾者/老师"角色。</b>这正是你的问题：你容易把恋爱谈成指导。<br>
+          年日双庚（比肩重）：好胜、要面子、不服输——所以被拒后你要么立刻自我否定，要么立刻想再试。<br>
+          时干癸水伤官：<b>才华、表达、音乐</b>。这是你身上最亮的东西，也是唯一不需要"用力"就能吸引她的东西。<br>
+          <b>你缺火，她时支有午。</b>她身上有你要的暖。
+        </div>
+      </div>
+
+      <div class="cut" style="margin-top:16px;">
+        <b>流月窗口（这才是"现在能不能约"的答案）</b><br>
+        <b>现在 — 11.6（丙午年 戊戌月）</b>：你是七杀＋正官，被催、上火、急；她是偏财＋辰戌冲，忙、有变动感。
+        两个人都不在松弛状态——<b>这个月不适合硬推。</b><br>
+        <b>11.7 — 12.6（己亥月）</b>：你的己土正印透（想得清楚），亥与你时支未<b>半合木局</b>——木是你的财星（妻星）；同时亥与她的日支寅<b>六合，合动配偶宫</b>。
+        <b>这是全年最明确的一个窗口，尤其 11 月中下旬。</b><br>
+        <b>12.7 — 2027.1.5（庚子月）</b>：她的七杀＋正印，子午冲被引动，容易缩、容易忙、容易被家里或工作牵制。<b>这个月只维持，不推进。</b><br>
+        <b>2027 丁未年</b>：丁火炼你的庚金（调候到位），未与她的午六合。<b>明年才是"能不能定下来"的年份，不是今年。</b>
+      </div>
+
+      <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7;">
+        说明：命理只作参考，不能替代行为证据。两者冲突时，<b style="color:var(--ink2);">一律以行为为准</b>。
+        这一节的作用不是替你做决定，是让你看见——你们不是"没缘"，是"节奏不对"。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 窗口 ============ -->
+  <section id="window">
+    <div class="sec-head">
+      <h2>时间窗口 · 为什么不是这个周末</h2>
+      <span class="tag">TIMING</span>
+      <span class="ln"></span>
+    </div>
+
+    <div class="winbar">
+      <div class="seg now">
+        <b>11.01 → 11.6</b>
+        <span>戊戌月。别空等——这周你在写歌，她在等歌。铺路，不是等待。</span>
+        <em>铺路</em>
+      </div>
+      <div class="seg go">
+        <b>11.7 → 12.6</b>
+        <span>己亥月。亥藏财星、寅亥合。距拒绝已一周以上，她也缓过来了。</span>
+        <em>窗口</em>
+      </div>
+      <div class="seg hold">
+        <b>12.7 → 1.5</b>
+        <span>庚子月。子午冲被引动，她容易缩。别逼，只维持存在感。</span>
+        <em>只维持</em>
+      </div>
+      <div class="seg next">
+        <b>2027 丁未</b>
+        <span>丁火炼金，午未六合。今年定不了的，明年才谈得上"定"。</span>
+        <em>定不定</em>
+      </div>
+    </div>
+
+    <div class="alert" style="margin-bottom:0;">
+      <h3>为什么今天（周日）还是不约</h3>
+      <p><b>① 你昨晚刚说完"晚安"，今天再推进，节奏就碎了。</b>她 22:38 那句"受宠若惊"还热着，你今天就去推下一步，等于把刚点着的火拿去烧水。</p>
+      <p><b>② 周日是她的回血日。</b>10 月每个周六她都在补课上班。周日她只想躺着，不想被安排。</p>
+      <p><b>③ 最重要：约人之前，得先有"事"。</b>你昨晚给了她一个角色，但那个角色还没有实体——歌还没写。
+      今天约，是空手约；等调子出来了再约，是带着东西约。后者才叫"她答应的不是约会，是那件事"。</p>
+    </div>
+  </section>
+
+  <!-- ============ 下一步 ============ -->
+  <section id="next">
+    <div class="sec-head">
+      <h2>下一步</h2>
+      <span class="tag">NEXT ACTION</span>
+      <span class="ln"></span>
+    </div>
+
+    <div class="hold" style="border-left:3px solid #c98a7c;">
+      <h3>第 0 步｜11.07—11.21 · 停约两周</h3>
+      <p><b>8 天，你开口约了她三次：</b>10.30 吃饭、11.01 早餐、11.06 散步。三次都没成行。
+      每一次都是"你出来找我"，每一次她都得回答"要不要"。</p>
+      <p style="margin-top:8px;">而今天白天你一开口都不用——她自己走过来了。这不是巧合，这是规律：</p>
+      <div class="cut" style="margin-top:10px;">
+        <b>她接受"发生"，不接受"安排"。</b><br>
+        打招呼、一起走、贴着手臂、放慢脚步、收下坚果——这些都不需要她做决定。<br>
+        "出来散步"需要。要换鞋、要跟人说、要承认"我晚上跟一个男同事出去了"。<br>
+        <b>对你是一段路，对她是一个立场。</b>
+      </div>
+      <p style="margin-top:10px;"><b>所以：两周内不再开口邀约。</b>不是放弃，是把"要不要"从她手里拿走。</p>
+      <ul>
+        <li>不约饭、不约散步、不约"出来一下"。一个都不。</li>
+        <li>她给了口子（"下次打球叫你"），你再接——那是她开的门。</li>
+        <li>这两周你只做一件事：<b>把歌交出来。</b>不带任何邀约地发过去。</li>
+      </ul>
+      <p style="margin-top:12px;color:#8a4a3f;"><b>但"停约"不等于"断联"。</b>
+      你今天想的"线上不理、线下热情"，是分裂——她能感觉到，而且会读成"他在惩罚我"或"他只在我在场时才在乎我"。</p>
+      <ul style="margin-top:6px;">
+        <li><b>她发消息，正常回。</b>短、自然，不追问、不撒娇、不"你终于回了"。</li>
+        <li><b>你不主动找话题，但也不是"不理"。</b>一天最多一条，而且是不要求回应的那种。</li>
+        <li><b>线下照常，不是"照常热情"。</b>不用因为线上冷就线下更热，也不用刻意冷。就跟 11.06 那样。</li>
+        <li><b>想测她会不会主动，不用断联两周——5 天不发起就够。</b>
+        11.08—11.12，你不主动发起，看她有没有先找你。她发了你正常回。<b>这是实验，不是冷战。</b></li>
+      </ul>
+    </div>
+
+    <div class="hold" style="border-left:3px solid #9dbbaa;">
+      <h3>第 1 步｜这一周 · 只用"不需要她回答"的方式靠近</h3>
+      <ul>
+        <li><b>当面至少给一句话。</b>"谢啦""慢慢吃""先走"——一句就够，说完就走。
+        <b>不留恋 ≠ 不说话。</b>什么都不说，她只会觉得"他今天怎么了"。</li>
+        <li><b>把歌交出来。</b>20—30 秒，一个前奏加一句副歌，手机录。发的时候只说歌："副歌大概这样，你听听能不能唱上去。"<b>不提见面。</b></li>
+        <li><b>排球可以接。</b>她提到机关一队在打气排球，你们的科长也在。下次她说缺人，你就去凑一个。
+        这是"参与"，不是"约会"——她不用回答任何问题。</li>
+        <li><b>继续用"事"开头，不用"人"开头。</b>工作、具体的物、能接得上的话头。</li>
+        <li><b>接住她的主动，但别放大。</b>她问"还堵吗"，你答"堵"。别把一句关心聊成一篇长文。</li>
+        <li><b>她要帮你做事，就让她帮。</b>让她在你身上花力气，关系才是双向的。</li>
+      </ul>
+      <p style="margin-top:10px;color:#8a4a3f;"><b>唯一要忍住的：</b>别把"今天很好"当成"今晚可以约"。
+      你每次都是白天得了分，晚上就想兑现——这一把，回回都输。</p>
+    </div>
+
+    <div class="hold" style="border-left:3px solid #c9a06f;">
+      <h3>关于吃醋：她跟别的男生聊天，怎么办</h3>
+      <p><b>先分清两件事：</b>她跟别人聊天，是她的自由；你吃醋，是你的课题。这两件事没有因果关系。</p>
+      <ul>
+        <li><b>不要问、不要查、不要旁敲侧击。</b>你去打听，就从"有趣的人"变成"危险的人"。</li>
+        <li><b>不要用冷脸表达。</b>你今天没表现出来，做得对——但要持续做到，而不是憋着。憋着会漏。</li>
+        <li><b>她跟谁聊不重要，她跟你聊的时候是什么状态才重要。</b>今天她把耳朵递给你、抱怨"我想溜"、让你帮她拿东西——这才是数据。</li>
+        <li><b>吃醋的根，不在她身上。</b>是"我怕被排除在外"。这个根，前女友种过，她没种。别把旧账算在她头上。</li>
+      </ul>
+    </div>
+
+    <div class="hold">
+      <h3>第 2 步｜周二到周四 · 把"写歌"变成一段真的调子</h3>
+      <p><b>这是整件事的胜负手。</b>你昨晚三分钟里说了三个未来（选你当主唱、带你搞艺术、给你写首歌）。
+        承诺说出口很容易，<b>兑现一次，你在她心里的分量就完全不一样</b>。</p>
+      <p style="margin-top:8px;color:#8a4a3f;"><b>前提：</b>今天这条要是整天空着，调子先别急着发。
+        等她那边恢复正常——她自己发一次，或者你回她一条、她正常接住——再发。
+        歌是好东西，但别让它变成"昨天堵我、今天又来找我"的续集。</p>
+      <ul>
+        <li><b>不要写整首。</b>写 20—30 秒：一个前奏 + 一句副歌的旋律。手机录，不用做后期。</li>
+        <li><b>不用歌词，或者只有一句。</b>重点是"能唱"，不是"好听"。</li>
+        <li><b>发的时候给一个具体画面：</b>"副歌大概这样，你听听能不能唱上去。唱不上去我降两个 key。"</li>
+        <li>她说"好听"，<b>别急着说"那我们见面"</b>——先问一句"这段你能唱吗"。</li>
+      </ul>
+      <p style="margin-top:8px;"><b>为什么这一步不能省：</b>你给她的不是一首歌，是"这个人是真的会为我做一件事"。
+        摩羯不信嘴，只信兑现。你说过的"下学期给你安排课""我多久转你多久转"，攒了一堆没落地的；
+        这一件，必须落地。</p>
+    </div>
+
+    <div class="next">
+      <div class="when">第 3 步｜11.05（周四）— 11.12（周三）· 下班后 · 20 分钟</div>
+      <h2>试唱：把"主唱"这个角色，变成一次真的见面</h2>
+      <p style="font-size:13.8px;color:var(--ink2);line-height:1.78;margin-bottom:14px;">
+        这是你第一次能名正言顺地约她出来，而且理由不是你编的——是她自己接下的活。
+        <b>它不是约会，是一场 20 分钟的合作。</b>正因为不是约会，她才敢来。
+      </p>
+
+      <div class="lab">话术 A（推荐 · 把见面说成"工作需要"）</div>
+      <div class="script">
+        这段我按你的音域写的，但我得听一遍才知道对不对。<br>
+        下班找个安静地方，你唱两句，我改一版。二十分钟。
+      </div>
+
+      <div class="lab">话术 B（更轻 · 给她一个"随时能走"的出口）</div>
+      <div class="script alt">
+        伴奏我弄好了。哪天你下班有空，找个地方试两句？<br>
+        二十分钟，唱完各回各家。
+      </div>
+
+      <div class="lab">话术 C（兜底 · 她一直不提的时候用）</div>
+      <div class="script alt2">
+        歌卡在副歌了，我写高了，你肯定唱不上去。<br>
+        哪天你给我哼两句，我校一下调——不然这首永远写不完。
+      </div>
+
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.78;margin-bottom:2px;">
+        <b>什么时候发：</b>看她对那段调子的反应。她回了"好听 / 可以 / 哈哈"，就 11.5（周四）或 11.6（周五）发；
+        她只回了个表情，就压到 11.10—11.12。
+        <b>不要同一天又发调子又约见面</b>——那是两件事，分开做。
+      </p>
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.78;margin-top:8px;">
+        <b>为什么是 20 分钟：</b>时间越短，她答应的成本越低。二十分钟，她可以不带妆、不换衣服、不跟任何人报备。
+        而只要她来了，这二十分钟大概率会变成四十分钟——因为你们本来就有话聊。
+      </p>
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.78;margin-top:8px;">
+        <b>地点：</b>校外，安静，能坐，离她回家顺路。江边、公园角落、一家不吵的咖啡店都行。
+        <b>不要 KTV</b>（太正式、太封闭、太像约会），<b>不要车内</b>（第一次见面，封闭空间压力大）。
+      </p>
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.78;margin-top:8px;">
+        <b>为什么这一次能成：</b>她拒绝的是"吃饭"——两小时、打扮、花钱、正式；
+        她答应的是"帮你试个调"——二十分钟、随便穿、有正事。
+        同一件事，换了层壳，门槛差了一个数量级。而这个人，本来就是"事件 + 角色"型的人。
+      </p>
+
+      <div class="rules3">
+        <div class="r3">
+          <b>为什么这次能成</b>
+          她拒绝的是"吃饭"——两小时、打扮、花钱、正式。她答应的是"帮你试个调"——二十分钟、随便穿、有正事。一层壳的差别，就是一个数量级的差别。
+        </div>
+        <div class="r3">
+          <b>这不是"降级"</b>
+          不要说"那吃饭算了，试唱总行吧"。试唱是另一件事，不是更便宜的那件事。姿态一低，她立刻闻出来。
+        </div>
+        <div class="r3">
+          <b>成了之后必须升级</b>
+          试唱完别急着约下一次。让她带着"这首歌还没弄完"的念头回去——下一次自然就有了。第二次再回到"坐下来吃顿饭"。
+        </div>
+      </div>
+    </div>
+
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="hold" style="margin-bottom:0;">
+        <h3 style="font-size:14px;">她答应之后 · 那 20 分钟怎么过</h3>
+        <ul>
+          <li><b>提前一天确认一次</b>，一句话："明天六点，老地方？"——给确定性，摩羯吃这套。</li>
+          <li><b>先唱，后聊。</b>正事在前十分钟办完：她唱两句，你说"这句高了，降两个调"，再录一遍。</li>
+          <li><b>正事办完，别马上走。</b>问一句"你平时都听什么"，然后听她说。这是你们第一次聊"不属于学校"的话题。</li>
+          <li><b>不聊工作、不聊领导、不聊转岗、不聊工资。</b>她的学校＝工作，出了校门就别再带回去。</li>
+          <li><b>三十分钟内结束。</b>结束语："今天先这样，我回去改，改好了发你。"——留一个"未完成"，比留一句"下次再约"有用十倍。</li>
+          <li>不表白、不牵手、不送礼、不拍照发朋友圈。</li>
+        </ul>
+      </div>
+      <div class="hold" style="margin-bottom:0;">
+        <h3 style="font-size:14px;">她推了 / 一直没空</h3>
+        <ul>
+          <li><b>"这周有点忙"</b> → "行，那你先忙。歌我慢慢改，不急。"——然后真的不提。</li>
+          <li><b>"我唱歌很难听"</b> → "难听才好写，难听有特点。"——把她的自我否定接成玩笑。</li>
+          <li><b>两次都推</b> → 停两周，不再提歌，也不再提见面。歌照做，做好了发她，但不问"什么时候唱"。</li>
+          <li><b>"不用了"</b> → "行，那我自己留着。"——一句，不解释，不失落。这是你最后的体面，也是她最会记住的一句。</li>
+          <li><b>不要问</b>"你是不是对我没意思"。这句话会把最后一点好感也拿走。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="hold">
+      <h3>关于"怎么开口"：你现在不需要开口，你需要开场</h3>
+      <p><b>开口＝表白，开场＝递一个理由。</b>表白是把她推到"你现在必须回答我"的位置上；开场是给她一个"跟你待二十分钟"的理由。前者是压力，后者是机会。</p>
+      <p style="margin-top:8px;">你现在说"我喜欢你"，会发生什么？她要么躲，要么说"我们先做朋友"。不是因为她不喜欢你，是因为<b>她还没想完</b>——摩羯的答案是慢慢长出来的，不是被问出来的。</p>
+      <p style="margin-top:8px;"><b>那什么时候能说？</b>等这三件事都发生了：① 你们单独见过 2—3 次；② 她开始主动找你（不是因为有工作）；③ 她开始问你私人的事（周末干嘛、跟谁）。到那时候，当面，短句，一句就够：</p>
+      <div class="script" style="margin-top:10px;">我这段时间挺喜欢跟你待着的。你呢？</div>
+      <p style="font-size:13px;color:var(--muted);margin-top:-2px;">给球，等她回。不要"我真的很喜欢你"，不要"我们算什么"，不要发长文。</p>
+      <p style="margin-top:10px;font-size:13.5px;color:var(--ink2);"><b>现在不要说，也不要问。</b>你问了，她会给一个你不想听的答案；你不问，她才会自己想起要给你一个答案。</p>
+    </div>
+
+    <div class="hold" style="border-left:3px solid #9dbbaa;">
+      <h3>这一周（11.02—11.08）· 在办公室怎么对她</h3>
+      <ul>
+        <li><b>明天早上：正常打招呼，"早"。一句。</b>不绕路，不低头看手机走过去——躲比说话更显眼。</li>
+        <li><b>她如果提</b> → "我那天就是路过，顺嘴一问，你别放心上。"一句，笑着说完就转工作。</li>
+        <li><b>她如果不提 → 永远不提。</b>不要"那天不好意思"，不解释，不道歉。</li>
+        <li><b>只是语气：不冷不热。</b>冷是赌气，热是补偿，两个都假。就当一个你挺喜欢的同事。</li>
+        <li>不主动闲聊、不跟别人打听她、不发朋友圈暗示、不发任何"给她看"的东西。</li>
+        <li><b>11 月 8 日晚上再看三件事：</b>她有没有恢复主动找你（不是工作）；她跟你说话自不自然；她提没提那天。<br>
+        三条都否 → 退到"同事"位，你不用宣布"放弃"，它自己会淡。有一条是 → 说明没你想的那么重。</li>
+      </ul>
+      <p style="margin-top:10px;color:#8a4a3f;"><b>这一周不做任何关系判断。</b>把判断推迟到 11 月 8 日——
+      在情绪最高的时候下的决心，通常是为了止痛，不是为了选择。</p>
+    </div>
+
+    <div class="cols2" style="margin-top:16px;">
+      <div class="hold" style="margin-bottom:0;">
+        <h3 style="font-size:14px;">最坏情况 · 她只把你当哥 / 她有别人</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:4px;">出现 3 条以上，就该退半步：</p>
+        <ul>
+          <li>称呼从"刘局/我的哥"退回"刘老师"</li>
+          <li>语音变文字，长句变短句</li>
+          <li>不再主动发起任何话题</li>
+          <li>开始在你面前提"我朋友/我妈/我对象"</li>
+          <li>两次邀约都推掉，且不给替代时间</li>
+        </ul>
+      </div>
+      <div class="hold" style="margin-bottom:0;">
+        <h3 style="font-size:14px;">怎么退，才不难看</h3>
+        <ul>
+          <li>不删、不拉黑、不质问、不发小作文、不在单位表现异常。</li>
+          <li>回到"同事＋偶尔聊天"，保持体面。</li>
+          <li>把精力放回自己：课、项目、乐队、健身。</li>
+          <li>你不需要她的答案来证明你值得。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 规则 ============ -->
+  <section id="rules">
+    <div class="sec-head">
+      <h2>止急规则</h2>
+      <span class="tag">RULES</span>
+      <span class="ln"></span>
+    </div>
+
+    <div class="pats">
+      <div class="pat">
+        <div class="idx">RULE 01</div>
+        <h4>发之前先问一句</h4>
+        <p>"我现在发这条，是因为有个事要说，还是因为我心里空？"如果是后者，放下手机，去干别的。</p>
+      </div>
+      <div class="pat">
+        <div class="idx">RULE 02</div>
+        <h4>只许想一个原因</h4>
+        <p>她回得慢，只允许想"她在忙"。不许想第二个。想第二个就是加戏，加戏就会做出变形动作。</p>
+      </div>
+      <div class="pat">
+        <div class="idx">RULE 03</div>
+        <h4>一周只主动三次</h4>
+        <p>其余时间只回应，不发起。这会让你显得有生活，也会让她有机会想你。</p>
+      </div>
+    </div>
+
+    <div class="emerg" style="margin-top:16px;">
+      <h4>焦虑急救 · 当你开始想"我是不是不该周末理她"的时候</h4>
+      <ol>
+        <li>把手机放到另一个房间，出门走 10 分钟。</li>
+        <li>把这句话读一遍：<b>"她回得慢，不等于我不该存在。"</b></li>
+        <li>再问自己一句：<b>"如果她今天说'我很累，明天聊'，我会不会好受一点？"</b>
+        如果答案是"会"——那你要的其实不是她的回复，是她的确认。而确认，是要不来的。</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 收尾 ============ -->
+  <section>
+    <div class="closing">
+      <div class="c-main">
+        31 天，你没有做错什么。<br>
+        你只是遇到了一个慢热的人，而你的节奏太快。
+      </div>
+      <div class="c-sub">
+        她给的东西是真的：语音、"这方便吗"、楼下那 30 分钟、悄悄话、"你等下去咩刘局"。<br>
+        她还没给的东西也是真的：一次校门外的"好"。<br><br>
+        前者证明你值得被喜欢。后者只说明——时候还没到。<br>
+        而你要做的，不是逼出那个"好"，是让自己配得上等到它。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 版本记录 ============ -->
+  <section id="changelog" style="margin-bottom:0;">
+    <div class="sec-head">
+      <h2>版本记录</h2>
+      <span class="tag">CHANGELOG</span>
+      <span class="ln"></span>
+    </div>
+    <div class="panel">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.7;">
+        约定：每收到一份新的聊天记录，这份看板就更新一次，改动记在这里。
+      </p>
+      <table class="cl">
+        <tr><td>11.07</td><td><b>新增「历史记录」按钮</b>（右下角，点开可看你每次问的文字）+ 建档 <code>提问历史.txt</code>；以后每次提问自动追加。</td></tr>
+        <tr><td>11.07</td><td><b>第 31 天 · 安静。</b>曲线增至 15 个点（11.07 = 6.8）；新增"停约 ≠ 断联"、5 天不发起实验、黄灯"低回应期"。</td></tr>
+        <tr><td>11.06</td><td><b>第 30 天 · 楼梯。</b>曲线 14 个点（11.06 = 8.2，重新越过绿线）；新增 11.06 节点、"第 0 步：停约两周"、KPI 改为"校门外 0 次"。</td></tr>
+        <tr><td>11.05</td><td><b>第 29 天 · 巧克力。</b>曲线增至 13 个点（11.05 = 7.5）；新增 11.05 节点、信号增补、"当面至少一句话"。</td></tr>
+        <tr><td>11.04</td><td><b>第 28 天 · 她主动三次。</b>曲线增至 12 个点（11.04 = 7.4，首次低于绿线）；新增 11.04 节点、黄灯增补、"明天给巧克力"。</td></tr>
+        <tr><td>11.03</td><td><b>第 27 天 · 停车场三分钟。</b>曲线增至 11 个点（11.03 = 7.9）；新增 11.03 节点、信号增补、"歪歪扭扭"变成老梗。</td></tr>
+        <tr><td>11.02</td><td><b>第 26 天 · 大回暖。</b>曲线增至 10 个点（11.02 = 8.4）；新增 11.02 节点、"巩固期"、"吃醋"专章。</td></tr>
+        <tr><td>11.01</td><td><b>第 25 天。</b>先加 10.31 晚"主唱"拐点与三步走（写歌 → 试唱）；当晚又补入"早餐失误"与善后协议。</td></tr>
+        <tr><td>10.31</td><td><b>第 24 天 · 焦虑日。</b>曲线拆成"当日交互 / 关系基线"双线；新增逐句拆解、焦虑循环、摩羯 × 双鱼、八字合盘、时间窗口。</td></tr>
+        <tr><td>10.30</td><td><b>第 23 天。</b>第一次当面邀约（停车场），被缓拒的四种解读，"抛出去就闭嘴"。</td></tr>
+        <tr><td>10.29</td><td><b>第 22 天。</b>食堂闭环、线下接触指标、"我比较 emo"那个错过窗口。</td></tr>
+        <tr><td>10.28</td><td><b>第 21 天。</b>你去电信学院替她招人；三条突破、两条风险。</td></tr>
+        <tr><td>10.27</td><td><b>第 20 天。</b>楼下 30 分钟、七个突破、三条风险。</td></tr>
+        <tr><td>10.25</td><td><b>第 18 天。</b>她第一次先开口；指标表、里程碑时间轴、方法论。</td></tr>
+        <tr><td>10.23</td><td><b>建档。</b>24 天回溯、4 小时 50 分长聊拆解、绿灯 / 黄灯 / 待观察。</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>最后更新：2026.11.07 19:55　·　第 31 天</span>
+    <span>配套文字档案：关系进展日志_莫佳雯.txt　·　提问历史.txt</span>
+  </footer>
+
+</div>
+
+<!-- ===== 历史记录按钮 + 弹窗 ===== -->
+<button id="histBtn" class="hist-btn" type="button">历史记录</button>
+
+<div id="histModal" class="hist-modal" aria-hidden="true" role="dialog" aria-label="提问历史">
+  <div class="hist-box">
+    <div class="hist-head">
+      <h3>提问历史</h3>
+      <span class="n">共 27 条　·　2026.10.23 — 11.07</span>
+      <button id="histClose" class="hist-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="hist-body">
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">01</span><span class="hist-time">2026-10-23 23:59</span></div>
+        <div class="hist-files">文件：10月23日.txt、10月23日2.txt、10月23日前.txt、语音按时间顺序.txt、我收的货.jpg</div>
+        <div class="hist-text">我是柳职的老师 我25年进入了柳职 莫佳雯是26年进的 我从电信学院借调到了发展规划与质量管理处 她是辅导员考进来 由于我俩都是本地人 她被借调到校办 23日前我在食堂跟她主动打过招呼 我跟她主动地介绍我 她并不排斥 也很乐意与我聊 我很开心 我喜欢她 这是我和她的聊天记录 你帮我分析一下 写一个详细的总结报告 用txt写 我以后每次都给你发我和她的聊天记录</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">02</span><span class="hist-time">2026-10-24 20:19</span></div>
+        <div class="hist-files">文件：10月24日.txt</div>
+        <div class="hist-text">今天我本来想去她办公室给她带个柑橘 但是没敢进去 那可是校长办公室的门口 我做得对吗</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">03</span><span class="hist-time">2026-10-25 22:47</span></div>
+        <div class="hist-files">文件：10月25日.txt、语音按时间顺序10月25日.txt</div>
+        <div class="hist-text">截图都是些财务系统上的图 语音全是她发的</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">04</span><span class="hist-time">2026-10-27 20:36</span></div>
+        <div class="hist-files">文件：10月27日.txt、语音按时间顺序10月27日.txt</div>
+        <div class="hist-text">今天中午我跟她在宿舍楼底下聊了半小时 我知道她是二中的 她知道了我是柳高的 她住十里江湾 我住胜利那边 我和她说了学校里头读博的事 她问我谁谁谁是叫什么名字 怎么称呼 我们聊了半小时 …… 我走在她左边 她右边是领导 然后咱们各开各五菱mini 到宿舍楼底 我下车叫她 莫老师 不等等我吗 她就等我了 …… 后来午觉起来下楼我特地掐时间等她 和她一起前后脚开进学校然后跟她上楼 在电梯里和她们办公室的一个电梯 然后我和她在电梯道别</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">05</span><span class="hist-time">2026-10-28 09:26</span></div>
+        <div class="hist-files">文件：10月27日晚_10月28日早.txt、语音按时间顺序10月27日晚_10月28日早.txt、恐怖的花花.jpg</div>
+        <div class="hist-text">（只发送了聊天记录与语音）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">06</span><span class="hist-time">2026-10-29 11:51</span></div>
+        <div class="hist-files">文件：10月28日_10月29日早.txt、语音按时间顺序10月28日.txt、帮她推广.png、晚上的官塘.jpg、我白车停在她旁边她歪歪扭扭的.jpg、小莫坐的位置.jpg</div>
+        <div class="hist-text">（只发送了聊天记录与图片）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">07</span><span class="hist-time">2026-10-29 12:44</span></div>
+        <div class="hist-files">文件：10月29日中午.txt、语音按时间顺序10月29日中午.txt</div>
+        <div class="hist-text">中午她说下班了 我就马上跑去食堂 她在打饭 我就靠近她 我说"天天打包啊？" 她就笑 跟我说今天有多忙 她没躲我 我和她站的很近 然后我们道别了 我下午要上课我在食堂吃 她打包走</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">08</span><span class="hist-time">2026-10-29 20:14</span></div>
+        <div class="hist-files">文件：10月29日下午.txt</div>
+        <div class="hist-text">（只发送了聊天记录）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">09</span><span class="hist-time">2026-10-30 12:33</span></div>
+        <div class="hist-files">文件：无（纯文字咨询）</div>
+        <div class="hist-text">刚才中午下班我下楼见到她 跟她随便聊了两句 她说要和部门一起聚餐了 我本来想邀请她下午下班去吃饭的 现在我该怎么办</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">10</span><span class="hist-time">2026-10-30 19:02</span></div>
+        <div class="hist-files">文件：10月30日.txt</div>
+        <div class="hist-text">今天下午我上班见到她了 在停车场 …… 她先跟我说哈喽 刘局 我叫她 莫局 …… 我愣了下 下意识靠近她 她对我笑 说 你去食堂吃饭吧 …… 下午17点30分我特地到停车地方旁边的小卖部买水 果然遇到她了 …… 我问她 想不想跟我出去吃饭 她笑着说今天不去了 我马上补充一句 是啊 今天太累了 然后就各回各家了</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">11</span><span class="hist-time">2026-10-30 19:21</span></div>
+        <div class="hist-files">文件：无</div>
+        <div class="hist-text">帮我画个html可视化图行吗 后续更新html和txt就行</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">12</span><span class="hist-time">2026-10-31 12:49</span></div>
+        <div class="hist-files">文件：10月31日.txt、语音按时间顺序10月31日.txt</div>
+        <div class="hist-text">可是我真的很着急 我想约她出来散步 就不跟她吃饭行吗 我不知道她是不是一个爱出去玩的人 她要是跟我以前的前女友一样 老是跟闺蜜出去 我很无所适从 …… 现在周末啊 不能约吗 温度降了咋办 刚才我跟她发消息 她这么久才回啊 我是不是不该周末理她 是不是不要再打扰她了 听声音像在外面</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">13</span><span class="hist-time">2026-10-31 13:29（第二版，更全）</span></div>
+        <div class="hist-files">文件：另附 7 张图 + 全部聊天记录、语音、看板与日志</div>
+        <div class="hist-text">帮我分析一下我和她的对话 她对我是怎么个意思 可是我真的很着急 我想约她出来散步 就不跟她吃饭行吗 我不知道她是不是一个爱出去玩的人 她要是跟我以前的前女友一样 老是跟闺蜜出去玩 我很无所适从 如果她只是无聊在家 那我一定会经常约她 只是我不知道她是怎样的 现在周末啊 不能约吗 温度降了咋办 刚才我跟她发消息 她这么久才回啊 我是不是不该周末理她 是不是不要再打扰她了 听声音像在外面 这是个摩羯座的女生 我只有她的生日 我是双鱼座 男命 年月日时分别是 庚辰 戊寅 庚戌 癸未 我该怎么办 那个面板你也帮我更新一下</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">14</span><span class="hist-time">2026-11-01 09:14</span></div>
+        <div class="hist-files">文件：语音按时间顺序10月31日.txt、语音按时间顺序10月31日晚.txt</div>
+        <div class="hist-text">（只发送了语音记录）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">15</span><span class="hist-time">2026-11-01 12:23</span></div>
+        <div class="hist-files">文件：11月1日.txt</div>
+        <div class="hist-text">（只发送了聊天记录）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">16</span><span class="hist-time">2026-11-01 17:52</span></div>
+        <div class="hist-files">附件：IMG_6711.PNG（梅花易数时间起卦）、1101气馁.txt</div>
+        <div class="hist-text">Deepseek 我想放弃她了 她主动找我聊天的次数少 我现在觉得她其实不喜欢我 虽然她到现在还没回复我 但是我觉得 我已经没法挽留她了 这是不可挽回的错误 我决定除工作外不在理她
+
+（另附）我觉得她其实对我的感觉是恭维而已 她只是在给情绪价值上有天赋对吗 我真的觉得我应该放弃她 这样下去像是留着一个案底 我也不知道后续上班怎么对她 至少一周内我是无所适从的</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">17</span><span class="hist-time">2026-11-02 21:15</span></div>
+        <div class="hist-files">文件：语音按时间顺序11月2日.txt、11月2日.txt</div>
+        <div class="hist-text">今天主动找她 她说没看昨天的 我其实不太信 但是我还是很高兴 她没往心里去 后来我们下午遇到了 她问我去不去开双师会 …… 我们开会过程中经常说悄悄话 就是我耳朵往她那靠 但是她不怎么往我这靠 她比较有分寸 …… 可是我又看到她和其他男生聊天 吗的 吃醋了 …… 不知道她是不是钓鱼 如果她是钓鱼 那我也愿意被钓 至少和她是开心大于难过的</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">18</span><span class="hist-time">2026-11-02 21:49</span></div>
+        <div class="hist-files">文件：无</div>
+        <div class="hist-text">每次都给我更新一下html好吗</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">19</span><span class="hist-time">2026-11-03 14:42</span></div>
+        <div class="hist-files">文件：11月3日.txt</div>
+        <div class="hist-text">刚才下午上班的时候我没有在宿舍楼下看到她 我上车后开得很慢 …… 我开门碰到她车屁股了 然后我就大喊 我还以为你这次停的不错呢 她就下车跟我笑着说 哎呀停在线内就好了嘛 然后我把伞挡过去 …… 她说她要去拿报纸 我马上反应过来 我说 领快递是吗？拜拜！ 她说是的 领快递 然后也回一声唱着说的 再见~ 我觉得这样就很好 拉扯刚好 我也不留恋她</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">20</span><span class="hist-time">2026-11-04 20:49</span></div>
+        <div class="hist-files">文件：11月4日.txt、语音按时间顺序11月4日.txt</div>
+        <div class="hist-text">刚才我一下班就下楼了 想着碰到她 可是没碰到 我就自己吃饭了 然后看到她十分钟后下了班进了食堂 我也没喊她 我觉得太刻意了 我忍住了 可是我觉得她不会主动找我 这可怎么办 这是因为她不喜欢我吗</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">21</span><span class="hist-time">2026-11-05 13:34</span></div>
+        <div class="hist-files">文件：11月5日.txt</div>
+        <div class="hist-text">今天早上我确实很忙 我早上去了一趟 她不在 但是我发现她在隔壁办公室忙着 我就没进去 …… 我就过去给她巧克力了 我一进去 她先跟我笑着说哈喽 我一句话也不说就放她桌上 对她微笑 …… 打完饭很巧 她刚好收碗走过来 她跟我招手打招呼 我跟她微笑 没说一句话</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">22</span><span class="hist-time">2026-11-05 13:36（重发）</span></div>
+        <div class="hist-files">文件：11月5日.txt</div>
+        <div class="hist-text">（重新发送同一记录，补全了当日对话内容）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">23</span><span class="hist-time">2026-11-06 21:03</span></div>
+        <div class="hist-files">文件：语音按时间顺序11月6日.txt、11月6日.txt</div>
+        <div class="hist-text">今天下午我上班见到她了 在停车场 …… 她先跟我说哈喽 刘局 我叫她 莫局 然后我主动靠近她给她打伞 我拿伞右手臂贴着她左手臂 她不反感 …… 有人等电梯 但是她不跟我坐电梯 她跟我走楼梯 …… 她跟我上楼特地放慢了速度 …… 然后到了四楼校办之后 她问我 你是在六楼吗 我说是啊 你想上去看看吗 她说 不去了 …… 我刚转头就回头给她我口袋里的每日坚果 …… 我不知道为什么约不出她</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">24</span><span class="hist-time">2026-11-06 21:05（重发）</span></div>
+        <div class="hist-files">文件：11月6日.txt</div>
+        <div class="hist-text">（重新发送，补全了 19:22 的晚间邀约内容："想出来跟我散步吗 我送给你""包有故事"）</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">25</span><span class="hist-time">2026-11-07 19:20</span></div>
+        <div class="hist-files">文件：11月7日.txt</div>
+        <div class="hist-text">她不理我的时候 我看到了关于回避型人格的文章和视频 就是说对付这样的人应该给她自己的空间 然后不能天天粘着她 天天粘着她只会让她觉得我廉价 所以我觉得不理她起码一两个星期就好了 唯一需要注意的是我得转移自己的注意力 但是如果线下遇到她 我还是要想原来一样 因为我们在线下是没有问题的 只是线上她不回消息</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">26</span><span class="hist-time">2026-11-07 19:50</span></div>
+        <div class="hist-files">文件：无</div>
+        <div class="hist-text">帮我把我每天问你的提示词都输出一个txt给我 以后也给我 文件你就写文件名加后缀就行 反正时间记录好就行 然后做进html的一个叫历史记录的按钮里 点开我能看我问你的文字</div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-meta"><span class="hist-idx">27</span><span class="hist-time">2026-11-07 20:20</span></div>
+        <div class="hist-files">文件：提问记录.txt</div>
+        <div class="hist-text">算上以前的 记得每次都更新提问历史 看板 和 关系进展日志_莫佳雯txt</div>
+      </div>
+
+      <p class="hist-tip">完整版见同目录下的「提问历史.txt」（已合并你原来的《提问记录.txt》）。以后每次提问都会自动追加到两处：这个弹窗，和那个 txt。</p>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById('histBtn');
+  var modal = document.getElementById('histModal');
+  var closeBtn = document.getElementById('histClose');
+  if(!btn || !modal) return;
+  function open(){ modal.classList.add('on'); modal.setAttribute('aria-hidden','false'); btn.style.display='none'; }
+  function close(){ modal.classList.remove('on'); modal.setAttribute('aria-hidden','true'); btn.style.display=''; }
+  btn.addEventListener('click', open);
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', function(e){ if(e.target === modal) close(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && modal.classList.contains('on')) close(); });
+})();
+</script>
+
+</body>
+</html>
